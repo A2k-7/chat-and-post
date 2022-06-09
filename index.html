@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<link rel="stylesheet" href="/home.css">
+
+<body id="body">
+  <div id="bar">
+    <div class="bitem" id="of">Offers</div>
+    <div class="bitem" id="cu">Making offers</div>
+    <div class="bitem" id="cu">Main chat room</div>
+    <div class="bitem" id="he">Sign out</div>
+
+  </div>
+
+
+  <div id="content"
+    style="width: 100%;height: 100%;display: flex;flex-direction: column;justify-content: center;gap: 0;align-items: center; ">
+    <div id="mo" class="Making offers" style="display: none;">
+      <div id="offer">
+        <input type="text" id="titlei" placeholder="add title">
+        <input type="file" id="img" placeholder="add image">
+        <textarea style="resize: none; " name="" id="disi" placeholder="Enter the product discreption" cols="30"
+          rows="10"></textarea>
+        <div id="submit" class="btn">Submit</div>
+      </div>
+
+    </div>
+    <div class="Offers" id="offers" style="display: none;">
+
+
+      <div class="offer" id="offer" style="display: none;">
+        <div id="title">
+          there is something for sell
+        </div>
+        <img src="" class="imgs" alt="not available image">
+        <div id="dis"> this product is for sale for
+          a long time but you just did't notice it didn't you?
+        </div>
+        <!-- <div id="btn">Buy</div> -->
+      </div>
+
+
+    </div>
+    <div class="Main chat room" id="chatRoom">
+      <div id="ms" class="hidden">
+
+        <div style="display: flex;justify-self: center;align-items: center;">
+          <div style="text-align: bottom;">hello</div>
+          <div id="msg"></div>
+        </div>
+      </div>
+
+      <input id="input" style="position: absolute;bottom:0;" type="text">
+
+    </div>
+  </div>
+  <script type="module" src="./jquery-3.6.0.js"></script>
+  <script src="/socket.io.min.js"></script>
+  <script>
+    var username;
+    window.onload = () => {
+
+      let selectedTab = document.getElementById("chatRoom");
+      [...document.getElementsByClassName("bitem")].forEach(tab => {
+
+        tab.onclick = () => {
+          if (tab.innerText == "Sign out") {
+
+            ajax("/out", { "": "" }, () => {
+              window.location.href = "/"
+            })
+          }
+
+          if (selectedTab == document.getElementsByClassName(tab.innerText)[0])
+            return;
+          selectedTab.style.display = "none";
+          selectedTab = document.getElementsByClassName(tab.innerText)[0];
+          selectedTab.style.display = "";
+        }
+      });
+
+      document.getElementById("submit").onclick = () => {
+        // const reader = new FileReader();
+        // reader.onload = function () {
+        //   const bytes = new Uint8Array(this.result);
+        //   // console.log(bytes);
+        //   ajax("/item", {
+        //     title: document.getElementById("titlei").value
+        //     ,
+        //     des: document.getElementById("disi").value
+        //     , img: bytes,
+        //     name: document.getElementById("img").files[0].name
+
+        //   }, (e) => {
+
+        //   })
+
+        // };
+        // reader.readAsArrayBuffer(document.getElementById("img").files[0]);
+        var file = new FileReader();
+        file.onload = function () {
+          const data = new Uint8Array(this.result);
+          ajax("/item", {
+            title: document.getElementById("titlei").value
+            ,
+            des: document.getElementById("disi").value
+            , img: data,
+            name: document.getElementById("img").files[0].name
+
+          }, () => {
+
+          });
+        }
+        file.readAsArrayBuffer(document.getElementById("img").files[0])
+      }
+      var chatRoom = document.getElementById("chatRoom");
+      var msg = document.getElementById("ms");
+
+      var socket = io();
+      socket.on("info",(data)=>{
+
+        username= data.name;
+      })
+      socket.on("offers", (data) => {
+        console.log(data.offers);
+        if (data.offers.length == 1) {
+          var offer = document.getElementsByClassName("offer")[0].cloneNode(true);
+
+          offer.children[0].innerText = data.offers.title;
+          offer.children[1].src = "/images/" + data.offers.img;
+          offer.children[2].innerText = data.offers.description;
+          offer.style.display = "flex";
+          document.getElementById("offers").append(offer);
+          // document.getElementById("offers").innerText+="";
+
+        } else
+          [...data.offers].forEach(offers => {
+            var offer = document.getElementsByClassName("offer")[0].cloneNode(true);
+            offer.children[0].innerText = offers.title;
+            offer.children[1].src = "/images/" + offers.img;
+            offer.children[2].innerText = offers.description;
+            offer.style.display = "flex";
+            document.getElementById("offers").append(offer);
+
+          })
+      })
+      socket.on("msg", (data) => {
+
+        console.log(data);
+        var newMsg = msg.cloneNode(true);
+        newMsg.children[0].children[0].innerText = data.name;
+        newMsg.children[0].children[1].innerText = data.msg;
+        newMsg.children[0].children[1].id = data.name==username ? "msgMine": "msg";
+        newMsg.className = "";
+        chatRoom.append(newMsg);
+        chatRoom.scrollTop = chatRoom.scrollHeight;
+
+
+
+      })
+
+      socket.on("update", (e) => {
+        var offer = document.getElementsByClassName("offer")[0].cloneNode(true);
+
+        offer.children[0].innerText = e.title;
+        offer.children[1].src = e.img;
+        offer.children[2].innerText = e.des;
+        offer.style.display = "flex";
+        document.getElementById("offers").append(offer);
+      })
+      document.getElementById("input").onkeyup = (e) => {
+        console.log("hiii");
+        if (e.key == "Enter" && e.target.value.toString().length > 0) {
+
+          socket.emit('msg', { msg: e.target.value });
+
+          // console.log("emitted");
+
+
+
+        }
+      }
+
+      function ajax(url, data, response) {
+
+        // var request = new XMLHttpRequest();
+        // request.setRequestHeader("ContentType","application/json"
+        $.ajax(
+          {
+            url: url,
+            method: "post",
+            contentType: "application/json",
+            data: JSON.stringify(data),
+            success: (e) => {
+              response(e)
+            }
+          }
+        )
+      }
+    }
+  </script>
+</body>
+
+</html>

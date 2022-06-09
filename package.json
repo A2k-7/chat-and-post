@@ -1,0 +1,19 @@
+{
+  "name": "chat-app",
+  "version": "1.0.0",
+  "description": "Web server that handles icoming requests from a chat application.",
+  "main": "index.js",
+  "scripts": {
+    "test": "nodemon index.js"
+  },
+  "author": "Abdulrahman Muhsin and Arwa Ammar",
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^7.5.3",
+    "better-sqlite3-session-store": "0.0.3",
+    "express": "^4.18.1",
+    "express-session": "^1.17.3",
+    "socket.io": "^4.5.1",
+    "socket.io-express-session": "^0.1.3"
+  }
+}
